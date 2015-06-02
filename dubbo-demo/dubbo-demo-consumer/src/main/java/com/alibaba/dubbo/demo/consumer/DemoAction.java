@@ -15,10 +15,10 @@
  */
 package com.alibaba.dubbo.demo.consumer;
 
+import com.alibaba.dubbo.demo.DemoService;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import com.alibaba.dubbo.demo.DemoService;
 
 public class DemoAction {
     

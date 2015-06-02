@@ -15,25 +15,27 @@
  */
 package com.alibaba.dubbo.rpc.protocol;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.Version;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
 import com.alibaba.dubbo.common.utils.NetUtils;
+import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
+import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcContext;
 import com.alibaba.dubbo.rpc.RpcException;
-import com.alibaba.dubbo.rpc.Invocation;
-import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcInvocation;
 import com.alibaba.dubbo.rpc.RpcResult;
 import com.alibaba.dubbo.rpc.support.RpcUtils;
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * AbstractInvoker.
@@ -138,12 +140,18 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         	invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
-        
-        
+
+
+        Transaction transaction = Cat.newTransaction("Invoke",
+                invocation.getInvoker().getInterface().getSimpleName() + "." + invocation.getMethodName());
         try {
-            return doInvoke(invocation);
+            Result result = doInvoke(invocation);
+            transaction.setStatus(Transaction.SUCCESS);
+            return result;
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
+            Cat.getProducer().logError(e);
+            transaction.setStatus(e);
             if (te == null) {
                 return new RpcResult(e);
             } else {
@@ -153,13 +161,19 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
                 return new RpcResult(te);
             }
         } catch (RpcException e) {
+            Cat.getProducer().logError(e);
+            transaction.setStatus(e);
             if (e.isBiz()) {
                 return new RpcResult(e);
             } else {
                 throw e;
             }
         } catch (Throwable e) {
+            Cat.getProducer().logError(e);
+            transaction.setStatus(e);
             return new RpcResult(e);
+        } finally {
+            transaction.complete();
         }
     }
 
