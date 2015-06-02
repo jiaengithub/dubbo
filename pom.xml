@@ -36,6 +36,11 @@
 		<name>Alibaba</name>
 		<url>http://www.alibaba.com</url>
 	</organization>
+	<parent>
+        <groupId>com.baturu</groupId>
+        <artifactId>baturu-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
 	<modules>
 		<module>hessian-lite</module>
 		<module>dubbo-common</module>
